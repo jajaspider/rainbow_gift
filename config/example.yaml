@@ -1,0 +1,7 @@
+mongo:
+  ip : "input ip"
+  port : "0000"
+  database : gift
+
+kakao:
+  key: "input javascript key"
