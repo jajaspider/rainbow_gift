@@ -27,12 +27,13 @@ passport.use('kakao', new KakaoStrategy({
     //     depth: null
     // });
     let userId = _.get(profile, 'id');
-    let existUser = await User.find({
+    let existUser = await User.findOne({
         user_id: userId
-    });
+    }).lean();
+
     if (existUser) {
         // 이미 존재하니 return
-        done(null, existUser);
+        done(null, existUser._id);
         return;
     }
     try {
@@ -42,19 +43,27 @@ passport.use('kakao', new KakaoStrategy({
             user_accessToken: accessToken,
             user_refreshToken: refreshToken
         });
-        done(null, result);
+        done(null, result._id);
     } catch (e) {
         console.dir(e);
         done(e);
     }
 
-}))
+}));
+
+passport.serializeUser(function (user, done) {
+    done(null, user);
+});
+
+passport.deserializeUser(function (user, done) {
+    done(null, user);
+});
 
 authRouter.get('/login', passport.authenticate('kakao'));
 authRouter.get('/kakao/callback', passport.authenticate('kakao', {
-        failureRedirect: '/',
-        session: true
-    }),
+    failureRedirect: '/',
+    session: true
+}),
 
     (req, res) => {
         console.dir(req);

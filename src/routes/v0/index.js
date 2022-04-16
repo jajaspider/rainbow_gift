@@ -1,10 +1,9 @@
 const express = require('express');
 
-// const authRouter = require('../auth');
+const gifticonRouter = require('./gifticon');
 
 const router = express.Router();
 
-
-// router.use('/auth', authRouter);
+router.use('/gifticon', gifticonRouter);
 
 module.exports = router;
