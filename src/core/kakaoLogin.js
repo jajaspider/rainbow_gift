@@ -20,12 +20,12 @@ module.exports = () => {
              * profile: 카카오가 보내준 유저 정보. profile의 정보를 바탕으로 회원가입
              */
             async (accessToken, refreshToken, profile, done) => {
-                console.dir({
-                    accessToken,
-                    refreshToken,
-                    profile,
-                    done
-                })
+                // console.dir({
+                //     accessToken,
+                //     refreshToken,
+                //     profile,
+                //     done
+                // })
                 // console.log('kakao profile', profile);
                 // try {
                 //     const exUser = await User.findOne({

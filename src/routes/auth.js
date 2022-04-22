@@ -33,7 +33,7 @@ passport.use('kakao', new KakaoStrategy({
 
     if (existUser) {
         // 이미 존재하니 return
-        done(null, existUser._id);
+        done(null, existUser);
         return;
     }
     try {
@@ -43,7 +43,7 @@ passport.use('kakao', new KakaoStrategy({
             user_accessToken: accessToken,
             user_refreshToken: refreshToken
         });
-        done(null, result._id);
+        done(null, result);
     } catch (e) {
         console.dir(e);
         done(e);
@@ -61,12 +61,12 @@ passport.deserializeUser(function (user, done) {
 
 authRouter.get('/login', passport.authenticate('kakao'));
 authRouter.get('/kakao/callback', passport.authenticate('kakao', {
-    failureRedirect: '/',
-    session: true
-}),
+        failureRedirect: '/',
+        session: true
+    }),
 
     (req, res) => {
-        console.dir(req);
+        // console.dir(req);
         return res.redirect('/');
     },
 );
