@@ -1,0 +1,3 @@
+- VSCODE 설정
+  - ESLint v3.0.10 사용
+  - Prettier v11.0.0 사용
