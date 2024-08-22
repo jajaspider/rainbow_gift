@@ -9,7 +9,7 @@ const categorySchema = new mongoose.Schema(
     id: {
       type: Number
     },
-    categoryId: {
+    category_id: {
       type: Number
     }
   },

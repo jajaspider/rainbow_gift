@@ -10,10 +10,10 @@ const itemSchema = new mongoose.Schema(
     id: {
       type: Number
     },
-    brandName: {
+    brand_name: {
       type: String
     },
-    brandId: {
+    brand_id: {
       type: Number
     }
   },

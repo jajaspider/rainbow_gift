@@ -52,7 +52,7 @@ async function updateBrand() {
       const brandObj = {
         name: _brand.name,
         id: _brand.id,
-        categoryId: _brand.conCategory1Id
+        category_id: _brand.conCategory1Id
       };
       await Brand.findOneAndUpdate({ name: _brand.name }, brandObj, {
         upsert: true,
@@ -80,11 +80,11 @@ async function updateItem() {
       const itemObj = {
         name: _item.name,
         id: _item.id,
-        brandName: _brand.name,
-        brandId: _brand.id
+        brand_name: _brand.name,
+        brand_id: _brand.id
       };
       await Item.findOneAndUpdate(
-        { brandName: _brand.name, name: _item.name },
+        { brand_name: _brand.name, name: _item.name },
         itemObj,
         {
           upsert: true,
@@ -107,6 +107,15 @@ async function getItemById(id) {
 async function getItemByName(name) {
   const nameRegex = new RegExp(`${name}`, "i");
   let targetItems = await Item.find({ name: nameRegex });
+  targetItems = toJSON(targetItems);
+
+  return targetItems;
+}
+
+async function getItemSearch(brandId, name) {
+  const nameRegex = new RegExp(name, "i");
+  console.dir(nameRegex);
+  let targetItems = await Item.find({ brand_id: brandId, name: nameRegex });
   targetItems = toJSON(targetItems);
 
   return targetItems;
@@ -136,6 +145,7 @@ module.exports = {
   getBrand,
   getItemByName,
   getItemById,
+  getItemSearch,
   getItemStatus,
   updateItem
 };

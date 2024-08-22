@@ -6,6 +6,7 @@ node_modules/
 
 # Nuxt.js build / generate output
 dist
+public/*
 
 
 config/rainbow.*.yaml
