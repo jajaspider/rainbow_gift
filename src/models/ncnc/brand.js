@@ -14,10 +14,10 @@ const categorySchema = new mongoose.Schema(
     }
   },
   {
-    timestamps: true,
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
     versionKey: false
   }
 );
 
 // Create Model & Export
-module.exports = mongoose.model("NCNCBrand", categorySchema);
+module.exports = mongoose.model("Brand", categorySchema);
