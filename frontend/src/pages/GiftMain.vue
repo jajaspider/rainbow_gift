@@ -121,6 +121,9 @@ import { ref } from 'vue';
 import axios from 'axios';
 import _ from 'lodash';
 import dayjs from 'dayjs';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 const categoryList = ref([]);
 const selectCategory = ref('');
@@ -188,11 +191,15 @@ const detailView = (props) => {
 };
 
 const sellClickHandler = () => {
-  let targetAlarm = {
+  let selected = {
     id: selectedId.value,
     brandId: selectedBranId.value,
   };
-  console.dir(targetAlarm);
+
+  router.push({
+    name: 'registerPage',
+    query: { id: selected.id, brand_id: selected.brandId },
+  });
   // if (_.isEmpty(telegramChatId.value)) {
   //   alert('input telegram id');
   //   return;
