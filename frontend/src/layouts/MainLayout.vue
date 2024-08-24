@@ -2,7 +2,7 @@
   <q-layout view="lHh Lpr lFf">
     <q-header>
       <q-toolbar>
-        <q-toolbar-title> 5999.kr </q-toolbar-title>
+        <q-toolbar-title> GiftiGifti </q-toolbar-title>
       </q-toolbar>
     </q-header>
 
@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+// import { ref } from 'vue';
 // import { EssentialLinkProps } from '../components/EssentialLink.vue';
 // import EssentialLink from '../components/EssentialLink.vue';
 
