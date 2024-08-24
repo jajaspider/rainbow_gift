@@ -69,6 +69,13 @@ async function getBrand() {
   return brand;
 }
 
+async function getBrandById(id) {
+  let brand = await Brand.findOne({ id });
+  brand = toJSON(brand);
+
+  return brand;
+}
+
 async function updateItem() {
   const brands = await getBrand();
   for (const _brand of brands) {
@@ -98,10 +105,10 @@ async function updateItem() {
 }
 
 async function getItemById(id) {
-  let targetItems = await Item.findOne({ id });
-  targetItems = toJSON(targetItems);
+  let targetItem = await Item.findOne({ id });
+  targetItem = toJSON(targetItem);
 
-  return targetItems;
+  return targetItem;
 }
 
 async function getItemByName(name) {
@@ -114,7 +121,6 @@ async function getItemByName(name) {
 
 async function getItemSearch(brandId, name) {
   const nameRegex = new RegExp(name, "i");
-  console.dir(nameRegex);
   let targetItems = await Item.find({ brand_id: brandId, name: nameRegex });
   targetItems = toJSON(targetItems);
 
@@ -144,6 +150,7 @@ module.exports = {
   updateBrand,
   getBrand,
   getItemByName,
+  getBrandById,
   getItemById,
   getItemSearch,
   getItemStatus,

@@ -23,6 +23,15 @@ router.put("/category", (req, res) => {
   }
 });
 
+router.get("/brand/:id", async (req, res) => {
+  try {
+    const brand = await ncncService.getBrandById(req.params.id);
+    return res.json(brand);
+  } catch (e) {
+    return res.json([]);
+  }
+});
+
 router.get("/brand", async (req, res) => {
   try {
     const brands = await ncncService.getBrand();
@@ -42,11 +51,19 @@ router.put("/brand", (req, res) => {
   }
 });
 
+router.get("/item/:id", async (req, res) => {
+  try {
+    const item = await ncncService.getItemById(req.params.id);
+    return res.json(item);
+  } catch (e) {
+    return res.json([]);
+  }
+});
+
 router.get("/item", async (req, res) => {
   try {
     const brandId = req.query.brand;
     const { name } = req.query;
-    console.dir(name);
     const categories = await ncncService.getItemSearch(brandId, name);
     return res.json(categories);
   } catch (e) {
