@@ -4,6 +4,8 @@ const _ = require("lodash");
 const CategorySchema = require("./ncnc/category");
 const BrandSchema = require("./ncnc/brand");
 const ItemSchema = require("./ncnc/item");
+const RegistSchema = require("./ncnc/regist");
+const RegistHistorySchema = require("./ncnc/registHistory");
 
 const config = require("../services/config");
 
@@ -26,5 +28,7 @@ mongoose
 module.exports = {
   Category: CategorySchema,
   Brand: BrandSchema,
-  Item: ItemSchema
+  Item: ItemSchema,
+  Regist: RegistSchema,
+  RegistHistory: RegistHistorySchema
 };

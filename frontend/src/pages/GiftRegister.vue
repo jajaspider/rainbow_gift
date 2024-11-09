@@ -45,7 +45,7 @@
       <q-card class="row" flat>
         <q-card-section> {{ brandName }} </q-card-section>
         <q-card-section> {{ itemName }} </q-card-section>
-        <q-card-section> 123123 </q-card-section>
+        <q-card-section> {{ price }} </q-card-section>
       </q-card>
 
       <q-space />
@@ -53,11 +53,7 @@
 
     <div class="row q-pa-md">
       <q-card class="row" flat>
-        <q-btn
-          label="Upload Images"
-          color="primary"
-          @click="triggerFileInput"
-        />
+        <q-btn label="이미지 선택" color="primary" @click="triggerFileInput" />
 
         <input
           type="file"
@@ -88,6 +84,18 @@
         </div>
       </q-scroll-area>
     </div>
+
+    <div class="row q-pa-md">
+      <q-card class="row" flat>
+        <q-btn
+          v-if="imageUrls.length > 0"
+          :disable="uploadDisable"
+          label="업로드"
+          color="primary"
+          @click="uploadImage"
+        />
+      </q-card>
+    </div>
   </q-card>
 </template>
 
@@ -96,10 +104,11 @@ import { ref } from 'vue';
 import axios from 'axios';
 import _ from 'lodash';
 import dayjs from 'dayjs';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 
 const route = useRoute();
+const router = useRouter();
 const $q = useQuasar();
 
 dayjs.locale('ko');
@@ -110,6 +119,10 @@ const itemId = route.query.id;
 
 const brandName = ref('');
 const itemName = ref('');
+const price = ref(0);
+price.value = route.query.item_price;
+const selectedFiles = ref([]);
+const uploadDisable = ref(false);
 
 axios.get(`ncnc/brand/${brandId}`).then((res) => {
   let brand = _.get(res, 'data');
@@ -146,9 +159,61 @@ const onFileChange = (event) => {
       console.error('Selected file is not an image.');
     }
   });
-
   // 파일 선택 후 input 요소의 값을 초기화
   event.target.value = '';
+
+  selectedFiles.value = files;
+};
+
+const uploadImage = async () => {
+  uploadDisable.value = true;
+  const formData = new FormData();
+  selectedFiles.value.forEach((file) => {
+    formData.append('files', file); // 'files'는 서버에서 기대하는 키
+  });
+
+  try {
+    const response = await axios.post('ncnc/uploadItem', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'X-Brand': brandId,
+        'X-Item': itemId,
+        'X-Price': price.value,
+      },
+    });
+
+    let status = _.get(response, 'status');
+    let data = _.get(response, 'data');
+    if (status == 200) {
+      const complete = _.get(data, 'complete', 0);
+      const total = _.get(data, 'total', 0);
+      console.dir({ complete, total });
+      $q.notify({
+        message: `총: ${total}개 중 ${complete}개 성공`,
+        type: 'positive',
+        timeout: 3000,
+      });
+
+      setTimeout(() => {
+        router.push({
+          name: 'listPage',
+        });
+      }, 3000); // 3초 대기
+    } else {
+      $q.notify({
+        message: '실패 재시도 해주세요.',
+        type: 'negative',
+      });
+      uploadDisable.value = false;
+    }
+    //
+  } catch (error) {
+    $q.notify({
+      message: '실패 재시도 해주세요.',
+      type: 'negative',
+    });
+    uploadDisable.value = false;
+  }
 };
 </script>
 

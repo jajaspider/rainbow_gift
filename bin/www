@@ -1,8 +1,10 @@
 #!/usr/bin/env node
+const _ = require("lodash");
 const http = require("http");
 const debug = require("debug")("rainbow-gift:server");
 
 const app = require("../app");
+const config = require("../src/services/config");
 
 function normalizePort(val) {
   const port = parseInt(val, 10);
@@ -19,8 +21,9 @@ function normalizePort(val) {
 
   return false;
 }
+const listenPort = _.get(config, "listenPort");
 
-const port = normalizePort(process.env.PORT || "3000");
+const port = normalizePort(listenPort || "30003");
 app.set("port", port);
 
 function onError(error) {

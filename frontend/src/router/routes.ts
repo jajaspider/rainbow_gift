@@ -11,18 +11,14 @@ const routes: RouteRecordRaw[] = [
         name: 'registerPage',
         component: () => import('src/pages/GiftRegister.vue'),
       },
+      {
+        path: 'list',
+        name: 'listPage',
+        component: () => import('src/pages/GiftList.vue'),
+      },
     ],
   },
-  // {
-  //   path: '/themore/',
-  //   component: () => import('layouts/MainLayout.vue'),
-  //   children: [
-  //     { path: '', component: () => import('pages/the-more/TheMoreCal.vue') },
-  //   ],
-  // },
 
-  // Always leave this as last one,
-  // but you can also remove it
   {
     path: '/:catchAll(.*)*',
     component: () => import('pages/ErrorNotFound.vue'),

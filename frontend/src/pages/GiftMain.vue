@@ -138,9 +138,9 @@ const searchName = ref('');
 const gifticonRows = ref([]);
 const detail = ref(false);
 const gifticonStatus = ref('');
-const telegramChatId = ref(0);
 const selectedId = ref(0);
 const selectedBranId = ref(0);
+const itemPrice = ref(0);
 dayjs.locale('ko');
 
 axios.get('ncnc/category').then((res) => {
@@ -186,6 +186,7 @@ const detailView = (props) => {
 
       selectedId.value = props.row.id;
       selectedBranId.value = props.row.brand_id;
+      itemPrice.value = res.data.askingPrice;
       detail.value = true;
     });
 };
@@ -194,64 +195,17 @@ const sellClickHandler = () => {
   let selected = {
     id: selectedId.value,
     brandId: selectedBranId.value,
+    itemPrice: itemPrice.value,
   };
 
   router.push({
     name: 'registerPage',
-    query: { id: selected.id, brand_id: selected.brandId },
+    query: {
+      id: selected.id,
+      brand_id: selected.brandId,
+      item_price: selected.itemPrice,
+    },
   });
-  // if (_.isEmpty(telegramChatId.value)) {
-  //   alert('input telegram id');
-  //   return;
-  // }
-
-  // axios.get('api/v0/ncnc/alarm/').then((res) => {
-  //   let targetAlarm = _.find(res.data, {
-  //     chat_id: telegramChatId.value,
-  //     id: selectedId.value,
-  //     brandId: selectedBranId.value,
-  //   });
-
-  //   if (_.isEmpty(targetAlarm)) {
-  //     //알림 설정
-  //     axios
-  //       .put(
-  //         `api/v0/ncnc/alarm/enable?brandId=${selectedBranId.value}&itemId=${selectedId.value}&chatId=${telegramChatId.value}`
-  //       )
-  //       .then(() => {
-  //         alert('알림 설정 완료');
-  //       })
-  //       .catch(() => {
-  //         alert('알림 설정 실패');
-  //       });
-  //   } else {
-  //     let active = _.get(targetAlarm, 'active');
-  //     if (active) {
-  //       //알림 해제
-  //       axios
-  //         .put(
-  //           `api/v0/ncnc/alarm/disable?brandId=${selectedBranId.value}&itemId=${selectedId.value}&chatId=${telegramChatId.value}`
-  //         )
-  //         .then(() => {
-  //           alert('알림 해제 완료');
-  //         })
-  //         .catch(() => {
-  //           alert('알림 해제 실패');
-  //         });
-  //     } else {
-  //       axios
-  //         .put(
-  //           `api/v0/ncnc/alarm/enable?brandId=${selectedBranId.value}&itemId=${selectedId.value}&chatId=${telegramChatId.value}`
-  //         )
-  //         .then(() => {
-  //           alert('알림 설정 완료');
-  //         })
-  //         .catch(() => {
-  //           alert('알림 설정 실패');
-  //         });
-  //     }
-  //   }
-  // });
 };
 
 const gifticonColumns = [
