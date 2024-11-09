@@ -1,0 +1,20 @@
+version: "3.6"
+
+services:
+  rainbow-gift:
+    build:
+      context: .
+      args:
+        TINI_VERSION: "v0.19.0"
+      dockerfile: Dockerfile
+    image: sonaapi/rainbow-gift:0.0.1
+    container_name: rainbow-gift
+    network_mode: host
+    environment:
+      NODE_ENV: production
+    restart: always
+    volumes:
+      - ./config:/app/config # 로컬 디렉토리를 컨테이너에 마운트
+      - ./public/images:/app/public/images # 로컬 디렉토리를 컨테이너에 마운트
+      - ./user-data:/app/user-data
+    command: ["npm", "start"] # 컨테이너 시작 시 실행할 명령
