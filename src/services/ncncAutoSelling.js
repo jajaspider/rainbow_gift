@@ -47,9 +47,9 @@ class AutoSelling {
       setInterval(async () => {
         // eslint-disable-next-line no-use-before-define
         await autoSelling.checkStatus();
-      }, 10000);
+      }, 1000);
     } catch (e) {
-      //   console.dir(e);
+        console.dir(e);
       await this.driver.quit();
       console.dir("chromedriver 실행실패");
       process.exit(1);
@@ -162,7 +162,7 @@ class AutoSelling {
           const isChecked = await checkbox.isSelected();
           console.dir(isChecked);
           if (!isChecked) {
-            await checkbox.click();
+            await this.driver.executeScript("arguments[0].click();", checkbox);
             console.dir("약관 동의");
           }
 
