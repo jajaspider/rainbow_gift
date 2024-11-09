@@ -1,0 +1,11 @@
+{
+  "extends": ["airbnb", "plugin:prettier/recommended"],
+  "rules": {
+    "object-curly-newline": 0,
+    "semi": ["warn", "always"],
+    "camelcase": ["warn", { "properties": "never" }],
+    "no-underscore-dangle": "off",
+    "no-restricted-syntax": "off",
+    "no-await-in-loop": "off"
+  }
+}

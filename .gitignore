@@ -1,0 +1,15 @@
+# Logs
+logs
+
+# Dependency directories
+node_modules/
+
+# Nuxt.js build / generate output
+dist
+public/*
+temp
+user-data/
+
+
+config/rainbow.*.yaml
+!config/rainbow.example.yaml
