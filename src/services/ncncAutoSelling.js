@@ -83,10 +83,25 @@ class AutoSelling {
     }
 
     for (const _item of items) {
-      const result = await ncncService.getItemStatus(
-        _item.brand_id,
-        _item.item_id
-      );
+      let result = null;
+      try {
+        result = await ncncService.getItemStatus(_item.brand_id, _item.item_id);
+      } catch (e) {
+        try {
+          axios.post(
+            `https://api.telegram.org/bot${_.get(
+              config,
+              "telegram_api_key"
+            )}/sendMessage`,
+            {
+              chat_id: _.get(config, "telegram_chat_id"),
+              text: `니콘 파싱 에러`
+            }
+          );
+        } catch (e1) {
+          //
+        }
+      }
       if (!_.isEmpty(result)) {
         const price = _.get(result, "askingPrice");
         const isBlock = _.get(result, "isBlock");
