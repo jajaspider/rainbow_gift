@@ -49,7 +49,7 @@ class AutoSelling {
         await autoSelling.checkStatus();
       }, 1000);
     } catch (e) {
-        console.dir(e);
+      console.dir(e);
       await this.driver.quit();
       console.dir("chromedriver 실행실패");
       process.exit(1);
@@ -93,16 +93,20 @@ class AutoSelling {
         if (isBlock === 0 && isRefuse === 0 && _item.price <= price) {
           let getTime = this.getCurrentTime();
           const noticeText = `[${getTime}] ${_item.brand_name} ${_item.item_name}(${result.askingPrice})`;
-          axios.post(
-            `https://api.telegram.org/bot${_.get(
-              config,
-              "telegram_api_key"
-            )}/sendMessage`,
-            {
-              chat_id: _.get(config, "telegram_chat_id"),
-              text: `${noticeText} 매입중`
-            }
-          );
+          try {
+            axios.post(
+              `https://api.telegram.org/bot${_.get(
+                config,
+                "telegram_api_key"
+              )}/sendMessage`,
+              {
+                chat_id: _.get(config, "telegram_chat_id"),
+                text: `${noticeText} 매입중`
+              }
+            );
+          } catch (e) {
+            //
+          }
 
           // 매입중이라면 연결되어있는 크롬 드라이버에 매입 프로세스
           await this.driver.get("https://ncnc.app/sell/wait-confirmed");
@@ -196,16 +200,20 @@ class AutoSelling {
 
               getTime = this.getCurrentTime();
 
-              axios.post(
-                `https://api.telegram.org/bot${_.get(
-                  config,
-                  "telegram_api_key"
-                )}/sendMessage`,
-                {
-                  chat_id: _.get(config, "telegram_chat_id"),
-                  text: `[${getTime}] ${noticeText} 매입완료\n\n${alertText}`
-                }
-              );
+              try {
+                axios.post(
+                  `https://api.telegram.org/bot${_.get(
+                    config,
+                    "telegram_api_key"
+                  )}/sendMessage`,
+                  {
+                    chat_id: _.get(config, "telegram_chat_id"),
+                    text: `[${getTime}] ${noticeText} 매입완료\n\n${alertText}`
+                  }
+                );
+              } catch (e) {
+                //
+              }
               await alert.accept();
             }
           } catch (e) {
