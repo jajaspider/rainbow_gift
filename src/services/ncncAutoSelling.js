@@ -10,6 +10,7 @@ const config = require("./config");
 
 class AutoSelling {
   constructor() {
+    this.useChrome = false;
     this.chromeUserData = path.join(process.cwd(), "user-data");
     this.init();
 
@@ -91,6 +92,10 @@ class AutoSelling {
         const isBlock = _.get(result, "isBlock");
         const isRefuse = _.get(result, "isRefuse");
         if (isBlock === 0 && isRefuse === 0 && _item.price <= price) {
+          if (autoSelling.useChrome === true) {
+            continue;
+          }
+          this.useChrome = true;
           let registHistory = null;
           try {
             registHistory = await RegistHistory.create(_item);
@@ -236,10 +241,12 @@ class AutoSelling {
                   //
                 }
                 await alert.accept();
+                autoSelling.useChrome = false;
               }
             } catch (e) {
               // await RegistHistory.create(_item);
               // await Regist.findOneAndDelete({ _id: _item._id });
+              autoSelling.useChrome = false;
             }
           } catch (e) {
             const getTime = this.getCurrentTime();
@@ -260,6 +267,7 @@ class AutoSelling {
             }
             await Regist.create(_item);
             await RegistHistory.findOneAndDelete({ _id: registHistory._id });
+            autoSelling.useChrome = false;
           }
         }
       }
