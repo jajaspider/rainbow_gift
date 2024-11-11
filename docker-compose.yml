@@ -7,7 +7,7 @@ services:
       args:
         TINI_VERSION: "v0.19.0"
       dockerfile: Dockerfile
-    image: sonaapi/rainbow-gift:0.0.1
+    image: sonaapi/rainbow-gift:0.0.2
     container_name: rainbow-gift
     network_mode: host
     environment:
