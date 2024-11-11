@@ -95,7 +95,7 @@ class AutoSelling {
           if (autoSelling.useChrome === true) {
             continue;
           }
-          this.useChrome = true;
+          autoSelling.useChrome = true;
           let registHistory = null;
           try {
             registHistory = await RegistHistory.create(_item);
