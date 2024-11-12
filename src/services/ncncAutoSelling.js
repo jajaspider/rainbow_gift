@@ -61,11 +61,11 @@ class AutoSelling {
 
     // 매입 프로세스 시작 이벤트
     ncncEvent.on("purchase", async (_item, result) => {
-      logger.info("purchase 이벤트 발생", { _item, result });
       const price = _.get(result, "askingPrice");
       const isBlock = _.get(result, "isBlock");
       const isRefuse = _.get(result, "isRefuse");
       if (isBlock === 0 && isRefuse === 0 && _item.price <= price) {
+        logger.info("purchase 이벤트 발생", { _item, result });
         if (autoSelling.useChrome === true) {
           logger.info("현재 크롬 사용중", { _item, result });
           // eslint-disable-next-line no-continue
@@ -246,7 +246,6 @@ class AutoSelling {
         logger.error(requestFail, e);
       }
       if (!_.isEmpty(result)) {
-        logger.info("매입 프로세스 시작");
         ncncEvent.emit("purchase", _item, result);
       }
       await autoSelling.delay(200);

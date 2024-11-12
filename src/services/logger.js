@@ -8,12 +8,18 @@ const logFormat = printf(
   // eslint-disable-next-line no-shadow
   ({ level, message, timestamp, stack, ...metadata }) => {
     let msg = `${timestamp} [${level}]: ${message}`;
-    if (stack) {
-      msg += `\nStack Trace: ${stack}`; // 에러 스택 출력
+    try{
+      if (stack) {
+        msg += `\nStack Trace: ${stack}`; // 에러 스택 출력
+      }
+      if (Object.keys(metadata).length > 0) {
+        msg += ` ${JSON.stringify(metadata)}`; // 메타데이터 출력
+      }
     }
-    if (Object.keys(metadata).length > 0) {
-      msg += ` ${JSON.stringify(metadata)}`; // 메타데이터 출력
+    catch(e){
+      console.dir(e)
     }
+    
     return msg;
   }
 );
