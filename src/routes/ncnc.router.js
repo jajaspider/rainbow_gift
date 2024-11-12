@@ -190,7 +190,10 @@ router.post("/uploadItem", upload.array("files", 10), async (req, res) => {
         const fileName = await appendFileExtension(_file.filename);
 
         const destinationPath = path.join(uploadPath, fileName);
-        fs.renameSync(_file.path, destinationPath);
+
+        fs.copyFileSync(_file.path,destinationPath);
+        fs.unlinkSync(_file.path);
+        // fs.renameSync(_file.path, destinationPath);
 
         completePath.push(fileName);
 

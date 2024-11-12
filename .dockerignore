@@ -1,0 +1,11 @@
+node_modules
+frontend
+config
+.eslintrc
+.gitignore
+.dockerignore
+.prettierignore
+.prettierrc
+docker-compose.yaml
+Dockerfile
+user-data
