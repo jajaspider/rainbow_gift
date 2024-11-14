@@ -171,22 +171,25 @@ class AutoSelling {
             logger.info("약관 동의 이미 체크됨", { _item, result });
           }
 
-          // 로컬 이미지 경로 만들어서 올리기
-          const itemPaths = [];
           for (const _path of _item.image_path) {
             // console.dir(_path);
-            itemPaths.push(path.join(process.cwd(), "public", "images", _path));
+            const _imagePath = path.join(
+              process.cwd(),
+              "public",
+              "images",
+              _path
+            );
+            // itemPaths.push(path.join(process.cwd(), "public", "images", _path));
+            const fileInputLocator = By.css('input[type="file"]');
+            await autoSelling.driver.wait(
+              until.elementLocated(fileInputLocator),
+              2000
+            );
+            const fileInput =
+              await autoSelling.driver.findElement(fileInputLocator);
+            await fileInput.sendKeys(_imagePath);
+            logger.info("이미지 삽입", { _item, result });
           }
-
-          const fileInputLocator = By.css('input[type="file"][multiple]');
-          await autoSelling.driver.wait(
-            until.elementLocated(fileInputLocator),
-            2000
-          );
-          const fileInput =
-            await autoSelling.driver.findElement(fileInputLocator);
-          await fileInput.sendKeys(itemPaths.join(" "));
-          logger.info("이미지 삽입", { _item, result });
 
           // 리뷰 신청하기 버튼
           const reviewLocator = By.xpath("//button[text()='리뷰신청하기']");
@@ -215,10 +218,11 @@ class AutoSelling {
             autoSelling.useChrome = false;
           }
         } catch (e) {
+          console.dir(e);
           const getTime = autoSelling.getCurrentTime();
           const purchaseFail = `[${getTime}] ${_item.brand_name} ${_item.item_name}(${result.askingPrice}) 매입실패 수동등록 필요`;
           await messageHandler(purchaseFail);
-          logger.info(purchaseFail, { _item, result });
+          logger.error(purchaseFail, { _item, result });
 
           autoSelling.useChrome = false;
         }
