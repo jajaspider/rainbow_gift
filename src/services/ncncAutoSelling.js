@@ -90,6 +90,10 @@ class AutoSelling {
           const buttonLocator = By.css(
             'button[data-cy="sell-wait-confirm-sell-button"]'
           );
+          await autoSelling.driver.wait(
+            until.elementLocated(buttonLocator),
+            5000
+          );
           const button = await autoSelling.driver.findElement(buttonLocator);
           await button.click();
           logger.info("판매하기 버튼 클릭", { _item, result });
@@ -100,7 +104,7 @@ class AutoSelling {
           );
           await autoSelling.driver.wait(
             until.elementLocated(categoryLocator),
-            2000
+            5000
           );
           const categoryElement =
             await autoSelling.driver.findElement(categoryLocator);
@@ -113,7 +117,7 @@ class AutoSelling {
           const brandLocator = By.xpath(`//div[text()='${_item.brand_name}']`);
           await autoSelling.driver.wait(
             until.elementLocated(brandLocator),
-            2000
+            5000
           );
           const brandElement =
             await autoSelling.driver.findElement(brandLocator);
@@ -128,7 +132,7 @@ class AutoSelling {
           );
           await autoSelling.driver.wait(
             until.elementLocated(inputLocator),
-            2000
+            5000
           );
           const inputElement =
             await autoSelling.driver.findElement(inputLocator);
@@ -142,12 +146,12 @@ class AutoSelling {
           );
           await autoSelling.driver.wait(
             until.elementLocated(itemLocator),
-            2000
+            5000
           );
           const itemElement = await autoSelling.driver.findElement(itemLocator);
           await autoSelling.driver.wait(
             until.elementIsVisible(itemElement),
-            10000
+            5000
           );
           await itemElement.click();
           logger.info("아이템 클릭", { _item, result });
@@ -156,7 +160,7 @@ class AutoSelling {
           const termCheckLocator = By.id("termCheck");
           await autoSelling.driver.wait(
             until.elementLocated(termCheckLocator),
-            10000
+            5000
           );
           const checkbox =
             await autoSelling.driver.findElement(termCheckLocator);
@@ -171,19 +175,19 @@ class AutoSelling {
             logger.info("약관 동의 이미 체크됨", { _item, result });
           }
 
+          // 로컬 이미지들 올리기
           for (const _path of _item.image_path) {
-            // console.dir(_path);
             const _imagePath = path.join(
               process.cwd(),
               "public",
               "images",
               _path
             );
-            // itemPaths.push(path.join(process.cwd(), "public", "images", _path));
+
             const fileInputLocator = By.css('input[type="file"]');
             await autoSelling.driver.wait(
               until.elementLocated(fileInputLocator),
-              2000
+              5000
             );
             const fileInput =
               await autoSelling.driver.findElement(fileInputLocator);
@@ -195,7 +199,7 @@ class AutoSelling {
           const reviewLocator = By.xpath("//button[text()='리뷰신청하기']");
           await autoSelling.driver.wait(
             until.elementLocated(reviewLocator),
-            2000
+            5000
           );
           const reviewElement =
             await autoSelling.driver.findElement(reviewLocator);
