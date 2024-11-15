@@ -7,7 +7,7 @@ services:
       args:
         TINI_VERSION: "v0.19.0"
       dockerfile: Dockerfile
-    image: sonaapi/rainbow-gift:0.0.2
+    image: sonaapi/rainbow-gift:0.0.3
     container_name: rainbow-gift
     network_mode: host
     environment:
@@ -17,4 +17,4 @@ services:
       - ./config:/app/config # 로컬 디렉토리를 컨테이너에 마운트
       - ./public/images:/app/public/images # 로컬 디렉토리를 컨테이너에 마운트
       - ./user-data:/app/user-data
-    command: ["npm", "start"] # 컨테이너 시작 시 실행할 명령
+    command: ["npm", "run-script start:prod"] # 컨테이너 시작 시 실행할 명령

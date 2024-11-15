@@ -1,12 +1,16 @@
-const axios = require("axios");
+/* eslint-disable no-use-before-define */
 const _ = require("lodash");
 const path = require("path");
 const { Builder, By, until } = require("selenium-webdriver");
 const chrome = require("selenium-webdriver/chrome");
+const EventEmitter = require("events");
 
 const { Regist, RegistHistory } = require("../models");
 const ncncService = require("./ncnc");
-const config = require("./config");
+const { messageHandler } = require("./telegram");
+const logger = require("./logger");
+
+const ncncEvent = new EventEmitter();
 
 class AutoSelling {
   constructor() {
@@ -18,6 +22,7 @@ class AutoSelling {
   }
 
   async init() {
+    logger.info("chrome driver 초기 설정 시작");
     const options = new chrome.Options();
     options.addArguments("--no-sandbox");
     options.addArguments("--headless=new");
@@ -29,10 +34,10 @@ class AutoSelling {
       mobileEmulation: { deviceName: "Pixel 7" },
       detach: true
     });
-
     options.excludeSwitches(["enable-automation"]);
 
     try {
+      logger.info("chrome driver 실행");
       this.driver = await new Builder()
         .forBrowser("chrome")
         .setChromeOptions(options)
@@ -44,17 +49,217 @@ class AutoSelling {
       );
 
       await this.driver.wait(until.elementLocated(buttonLocator), 3000);
+      logger.info("chrome driver 판매하기 버튼 확인");
 
-      setInterval(async () => {
-        // eslint-disable-next-line no-use-before-define
-        await autoSelling.checkStatus();
-      }, 1000);
+      ncncEvent.on("poll", autoSelling.runPollingLoop);
+      ncncEvent.emit("poll");
     } catch (e) {
-      console.dir(e);
+      logger.error("chrome driver 실행 실패", e);
       await this.driver.quit();
-      console.dir("chromedriver 실행실패");
       process.exit(1);
     }
+
+    // 매입 프로세스 시작 이벤트
+    ncncEvent.on("purchase", async (_item, result) => {
+      const price = _.get(result, "askingPrice");
+      const isBlock = _.get(result, "isBlock");
+      const isRefuse = _.get(result, "isRefuse");
+      if (isBlock === 0 && isRefuse === 0 && _item.price <= price) {
+        logger.info("purchase 이벤트 발생", { _item, result });
+        if (autoSelling.useChrome === true) {
+          logger.info("현재 크롬 사용중", { _item, result });
+          // eslint-disable-next-line no-continue
+          return;
+        }
+        autoSelling.useChrome = true;
+        logger.info("매입 프로세스 시작", { _item, result });
+
+        // let registHistory = null;
+        try {
+          await RegistHistory.create(_item);
+          await Regist.findOneAndDelete({ _id: _item._id });
+
+          const purchaseProcess = `${_item.brand_name} ${_item.item_name}(${result.askingPrice})  매입중`;
+          await messageHandler(purchaseProcess);
+          logger.info(purchaseProcess, { _item, result });
+
+          // 매입중이라면 연결되어있는 크롬 드라이버에 매입 프로세스
+          await autoSelling.driver.get("https://ncnc.app/sell/wait-confirmed");
+
+          // 쿠폰 판매하기 버튼
+          const buttonLocator = By.css(
+            'button[data-cy="sell-wait-confirm-sell-button"]'
+          );
+          await autoSelling.driver.wait(
+            until.elementLocated(buttonLocator),
+            5000
+          );
+          const button = await autoSelling.driver.findElement(buttonLocator);
+          await button.click();
+          logger.info("판매하기 버튼 클릭", { _item, result });
+
+          // 카테고리 선택
+          const categoryLocator = By.xpath(
+            `//div[text()='${_item.category_name}']`
+          );
+          await autoSelling.driver.wait(
+            until.elementLocated(categoryLocator),
+            5000
+          );
+          const categoryElement =
+            await autoSelling.driver.findElement(categoryLocator);
+          if (categoryElement) {
+            await categoryElement.click();
+            logger.info("카테고리 버튼 클릭", { _item, result });
+          }
+
+          // 브랜드 선택
+          const brandLocator = By.xpath(`//div[text()='${_item.brand_name}']`);
+          await autoSelling.driver.wait(
+            until.elementLocated(brandLocator),
+            5000
+          );
+          const brandElement =
+            await autoSelling.driver.findElement(brandLocator);
+          if (brandElement) {
+            await brandElement.click();
+            logger.info("브랜드 버튼 클릭", { _item, result });
+          }
+
+          // 아이템 검색
+          const inputLocator = By.css(
+            'input[data-cy="upload-con-search-input"]'
+          );
+          await autoSelling.driver.wait(
+            until.elementLocated(inputLocator),
+            5000
+          );
+          const inputElement =
+            await autoSelling.driver.findElement(inputLocator);
+          await inputElement.sendKeys(_item.item_name);
+          logger.info("아이템 검색 입력", { _item, result });
+
+          await autoSelling.delay(1000);
+          // 아이템 선택
+          const itemLocator = By.xpath(
+            `//div[@id='conItme-name' and text()='${_item.item_name}']`
+          );
+          await autoSelling.driver.wait(
+            until.elementLocated(itemLocator),
+            5000
+          );
+          const itemElement = await autoSelling.driver.findElement(itemLocator);
+          await autoSelling.driver.wait(
+            until.elementIsVisible(itemElement),
+            5000
+          );
+          await itemElement.click();
+          logger.info("아이템 클릭", { _item, result });
+
+          // 약관 체크
+          const termCheckLocator = By.id("termCheck");
+          await autoSelling.driver.wait(
+            until.elementLocated(termCheckLocator),
+            5000
+          );
+          const checkbox =
+            await autoSelling.driver.findElement(termCheckLocator);
+          const isChecked = await checkbox.isSelected();
+          if (!isChecked) {
+            await autoSelling.driver.executeScript(
+              "arguments[0].click();",
+              checkbox
+            );
+            logger.info("약관 동의 클릭", { _item, result });
+          } else {
+            logger.info("약관 동의 이미 체크됨", { _item, result });
+          }
+
+          // 로컬 이미지들 올리기
+          for (const _path of _item.image_path) {
+            const _imagePath = path.join(
+              process.cwd(),
+              "public",
+              "images",
+              _path
+            );
+
+            const fileInputLocator = By.css('input[type="file"]');
+            await autoSelling.driver.wait(
+              until.elementLocated(fileInputLocator),
+              5000
+            );
+            const fileInput =
+              await autoSelling.driver.findElement(fileInputLocator);
+            await fileInput.sendKeys(_imagePath);
+            logger.info("이미지 삽입", { _item, result });
+          }
+
+          // 리뷰 신청하기 버튼
+          const reviewLocator = By.xpath("//button[text()='리뷰신청하기']");
+          await autoSelling.driver.wait(
+            until.elementLocated(reviewLocator),
+            5000
+          );
+          const reviewElement =
+            await autoSelling.driver.findElement(reviewLocator);
+          if (reviewElement) {
+            await reviewElement.click();
+            logger.info("리뷰 신청", { _item, result });
+
+            // await RegistHistory.create(_item);
+            // await Regist.findOneAndDelete({ _id: _item._id });
+
+            await autoSelling.driver.wait(until.alertIsPresent(), 5000); // 최대 5초 대기
+            const alert = await autoSelling.driver.switchTo().alert();
+            const alertText = await alert.getText();
+            await alert.accept();
+
+            const purchaseComplete = `${_item.brand_name} ${_item.item_name}(${result.askingPrice}) 매입완료\n\n${alertText}`;
+            await messageHandler(purchaseComplete);
+            logger.info(purchaseComplete, { _item, result });
+
+            autoSelling.useChrome = false;
+          }
+        } catch (e) {
+          console.dir(e);
+          const getTime = autoSelling.getCurrentTime();
+          const purchaseFail = `[${getTime}] ${_item.brand_name} ${_item.item_name}(${result.askingPrice}) 매입실패 수동등록 필요`;
+          await messageHandler(purchaseFail);
+          logger.error(purchaseFail, { _item, result });
+
+          autoSelling.useChrome = false;
+        }
+      }
+    });
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  async runPollingLoop() {
+    logger.info("runPollingLoop 시작");
+    let items = await Regist.find({});
+    items = JSON.parse(JSON.stringify(items));
+
+    if (_.isEmpty(items)) {
+      return;
+    }
+
+    for (const _item of items) {
+      let result = null;
+      try {
+        result = await ncncService.getItemStatus(_item.brand_id, _item.item_id);
+      } catch (e) {
+        const requestFail = `니콘내콘 리퀘스트 실패`;
+        await messageHandler(requestFail);
+        logger.error(requestFail, e);
+      }
+      if (!_.isEmpty(result)) {
+        ncncEvent.emit("purchase", _item, result);
+      }
+      await autoSelling.delay(200);
+    }
+    logger.info("runPollingLoop 종료");
+    setTimeout(() => ncncEvent.emit("poll"), 1000);
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -72,221 +277,6 @@ class AutoSelling {
   delay(ms) {
     // eslint-disable-next-line no-promise-executor-return
     return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  async checkStatus() {
-    let items = await Regist.find({});
-    items = JSON.parse(JSON.stringify(items));
-
-    if (_.isEmpty(items)) {
-      return;
-    }
-
-    for (const _item of items) {
-      let result = null;
-      try {
-        result = await ncncService.getItemStatus(_item.brand_id, _item.item_id);
-      } catch (e) {
-        try {
-          axios.post(
-            `https://api.telegram.org/bot${_.get(
-              config,
-              "telegram_api_key"
-            )}/sendMessage`,
-            {
-              chat_id: _.get(config, "telegram_chat_id"),
-              text: `니콘 파싱 에러`
-            }
-          );
-        } catch (e1) {
-          //
-        }
-      }
-      if (!_.isEmpty(result)) {
-        const price = _.get(result, "askingPrice");
-        const isBlock = _.get(result, "isBlock");
-        const isRefuse = _.get(result, "isRefuse");
-        if (isBlock === 0 && isRefuse === 0 && _item.price <= price) {
-          if (autoSelling.useChrome === true) {
-            continue;
-          }
-          autoSelling.useChrome = true;
-          let registHistory = null;
-          try {
-            registHistory = await RegistHistory.create(_item);
-            await Regist.findOneAndDelete({ _id: _item._id });
-
-            let getTime = this.getCurrentTime();
-            const noticeText = `[${getTime}] ${_item.brand_name} ${_item.item_name}(${result.askingPrice})`;
-            try {
-              axios.post(
-                `https://api.telegram.org/bot${_.get(
-                  config,
-                  "telegram_api_key"
-                )}/sendMessage`,
-                {
-                  chat_id: _.get(config, "telegram_chat_id"),
-                  text: `${noticeText} 매입중`
-                }
-              );
-            } catch (e) {
-              //
-            }
-
-            // 매입중이라면 연결되어있는 크롬 드라이버에 매입 프로세스
-            await this.driver.get("https://ncnc.app/sell/wait-confirmed");
-
-            // 쿠폰 판매하기 버튼
-            const buttonLocator = By.css(
-              'button[data-cy="sell-wait-confirm-sell-button"]'
-            );
-            const button = await this.driver.findElement(buttonLocator);
-            await button.click();
-            console.dir("판매하기 버튼");
-
-            // 카테고리 선택
-            const categoryLocator = By.xpath(
-              `//div[text()='${_item.category_name}']`
-            );
-            await this.driver.wait(until.elementLocated(categoryLocator), 2000);
-            const categoryElement =
-              await this.driver.findElement(categoryLocator);
-            if (categoryElement) {
-              await categoryElement.click();
-              console.dir("카테고리 버튼");
-            }
-
-            // 브랜드 선택
-            const brandLocator = By.xpath(
-              `//div[text()='${_item.brand_name}']`
-            );
-            await this.driver.wait(until.elementLocated(brandLocator), 2000);
-            const brandElement = await this.driver.findElement(brandLocator);
-            if (brandElement) {
-              await brandElement.click();
-              console.dir("브랜드 버튼");
-            }
-
-            // 아이템 검색
-            const inputLocator = By.css(
-              'input[data-cy="upload-con-search-input"]'
-            );
-            await this.driver.wait(until.elementLocated(inputLocator), 2000);
-            const inputElement = await this.driver.findElement(inputLocator);
-            await inputElement.sendKeys(_item.item_name);
-            console.dir("아이템 검색 입력");
-
-            await this.delay(1000);
-            // 아이템 선택
-            const itemLocator = By.xpath(
-              `//div[@id='conItme-name' and text()='${_item.item_name}']`
-            );
-            await this.driver.wait(until.elementLocated(itemLocator), 2000);
-            const itemElement = await this.driver.findElement(itemLocator);
-            await this.driver.wait(until.elementIsVisible(itemElement), 10000);
-            await itemElement.click();
-            console.dir("아이템 클릭");
-
-            // 약관 체크
-            const termCheckLocator = By.id("termCheck");
-            await this.driver.wait(
-              until.elementLocated(termCheckLocator),
-              10000
-            );
-            const checkbox = await this.driver.findElement(termCheckLocator);
-            const isChecked = await checkbox.isSelected();
-            console.dir(isChecked);
-            if (!isChecked) {
-              await this.driver.executeScript(
-                "arguments[0].click();",
-                checkbox
-              );
-              console.dir("약관 동의");
-            }
-
-            // 로컬 이미지 경로 만들어서 올리기
-            const itemPaths = [];
-            for (const _path of _item.image_path) {
-              // console.dir(_path);
-              itemPaths.push(
-                path.join(process.cwd(), "public", "images", _path)
-              );
-            }
-
-            const fileInputLocator = By.css('input[type="file"][multiple]');
-            await this.driver.wait(
-              until.elementLocated(fileInputLocator),
-              2000
-            );
-            const fileInput = await this.driver.findElement(fileInputLocator);
-            await fileInput.sendKeys(itemPaths.join(" "));
-            console.dir("이미지 삽입");
-
-            try {
-              // 리뷰 신청하기 버튼
-              const reviewLocator = By.xpath("//button[text()='리뷰신청하기']");
-              await this.driver.wait(until.elementLocated(reviewLocator), 2000);
-              const reviewElement =
-                await this.driver.findElement(reviewLocator);
-              if (reviewElement) {
-                await reviewElement.click();
-                console.dir("리뷰 신청");
-
-                // await RegistHistory.create(_item);
-                // await Regist.findOneAndDelete({ _id: _item._id });
-
-                await this.driver.wait(until.alertIsPresent(), 5000); // 최대 5초 대기
-                const alert = await this.driver.switchTo().alert();
-                const alertText = await alert.getText();
-
-                getTime = this.getCurrentTime();
-
-                try {
-                  axios.post(
-                    `https://api.telegram.org/bot${_.get(
-                      config,
-                      "telegram_api_key"
-                    )}/sendMessage`,
-                    {
-                      chat_id: _.get(config, "telegram_chat_id"),
-                      text: `[${getTime}] ${noticeText} 매입완료\n\n${alertText}`
-                    }
-                  );
-                } catch (e) {
-                  //
-                }
-                await alert.accept();
-                autoSelling.useChrome = false;
-              }
-            } catch (e) {
-              // await RegistHistory.create(_item);
-              // await Regist.findOneAndDelete({ _id: _item._id });
-              autoSelling.useChrome = false;
-            }
-          } catch (e) {
-            const getTime = this.getCurrentTime();
-            const noticeText = `[${getTime}] ${_item.brand_name} ${_item.item_name}(${result.askingPrice})`;
-            try {
-              axios.post(
-                `https://api.telegram.org/bot${_.get(
-                  config,
-                  "telegram_api_key"
-                )}/sendMessage`,
-                {
-                  chat_id: _.get(config, "telegram_chat_id"),
-                  text: `[${getTime}] ${noticeText} 매입실패 재등록`
-                }
-              );
-            } catch (e1) {
-              //
-            }
-            await Regist.create(_item);
-            await RegistHistory.findOneAndDelete({ _id: registHistory._id });
-            autoSelling.useChrome = false;
-          }
-        }
-      }
-    }
   }
 }
 
