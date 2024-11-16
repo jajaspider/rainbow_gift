@@ -64,7 +64,7 @@ class AutoSelling {
       const price = _.get(result, "askingPrice");
       const isBlock = _.get(result, "isBlock");
       const isRefuse = _.get(result, "isRefuse");
-      if (isBlock === 0 && isRefuse === 0 && _item.price <= price) {
+      if (isBlock === 0 && isRefuse === 0) {
         logger.info("purchase 이벤트 발생", { _item, result });
         if (autoSelling.useChrome === true) {
           logger.info("현재 크롬 사용중", { _item, result });
@@ -86,7 +86,7 @@ class AutoSelling {
             { status: "progress" }
           );
 
-          const purchaseProcess = `매입중\n브랜드: ${_item.brand_name}\n상품명: ${_item.item_name}\n판매 신청 가격: ${_item.price}원\n현재 매입 가격: ${price}\n`;
+          const purchaseProcess = `매입중\n브랜드: ${_item.brand_name}\n상품명: ${_item.item_name}\n판매 신청 가격: ${_item.price}원\n현재 매입 가격: ${price}원`;
           await messageHandler(purchaseProcess);
           logger.info(purchaseProcess, { _item, result });
 
@@ -220,7 +220,7 @@ class AutoSelling {
             await alert.accept();
 
             if (_.includes(alertText, "쿠폰이 등록되었습니다.")) {
-              const purchaseComplete = `매입완료\n브랜드: ${_item.brand_name}\n상품명: ${_item.item_name}\n매입 가격: ${price}\n완료 갯수: ${completeCount}/${itemCount}\n메세지: ${alertText}`;
+              const purchaseComplete = `매입완료\n브랜드: ${_item.brand_name}\n상품명: ${_item.item_name}\n매입 가격: ${price}원\n완료 갯수: ${completeCount}/${itemCount}\n\n${alertText}`;
               await messageHandler(purchaseComplete);
               logger.info(purchaseComplete, { _item, result });
               await RegistHistory.findOneAndUpdate(
@@ -228,7 +228,7 @@ class AutoSelling {
                 { status: "success" }
               );
             } else {
-              const purchaseComplete = `매입실패\n브랜드: ${_item.brand_name}\n상품명: ${_item.item_name}\n매입 가격: ${price}\n완료 갯수: ${completeCount}/${itemCount}\n메세지: ${alertText}`;
+              const purchaseComplete = `매입실패\n브랜드: ${_item.brand_name}\n상품명: ${_item.item_name}\n매입 가격: ${price}원\n완료 갯수: ${completeCount}/${itemCount}\n\n${alertText}`;
               await messageHandler(purchaseComplete);
               logger.info(purchaseComplete, { _item, result });
               await RegistHistory.findOneAndUpdate(
@@ -245,6 +245,15 @@ class AutoSelling {
           }
         } catch (e) {
           console.dir(e);
+          if (e.name === "UnexpectedAlertOpenError") {
+            const purchaseFail = `매입 제한량 도달 재등록 필요\n브랜드: ${_item.brand_name}\n상품명: ${_item.item_name}\nid: ${_item._id}`;
+            await messageHandler(purchaseFail);
+            logger.error(purchaseFail, { _item, result });
+            await RegistHistory.findOneAndUpdate(
+              { _id: registHistory._id },
+              { status: "fail" }
+            );
+          }
           const purchaseFail = `매입실패 수동 확인 필요\n브랜드: ${_item.brand_name}\n상품명: ${_item.item_name}\nid: ${_item._id}`;
           await messageHandler(purchaseFail);
           logger.error(purchaseFail, { _item, result });
