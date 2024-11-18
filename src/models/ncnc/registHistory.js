@@ -31,6 +31,9 @@ const RegistHistorySchema = new mongoose.Schema(
     status: {
       type: String,
       enum: giftiStatus
+    },
+    active: {
+      type: Boolean
     }
   },
   {
