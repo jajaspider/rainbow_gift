@@ -64,7 +64,7 @@ class AutoSelling {
       const price = _.get(result, "askingPrice");
       const isBlock = _.get(result, "isBlock");
       const isRefuse = _.get(result, "isRefuse");
-      if (isBlock === 0 && isRefuse === 0) {
+      if (isBlock === 0 && isRefuse === 0 && _item.price <= price) {
         logger.info("purchase 이벤트 발생", { _item, result });
         if (autoSelling.useChrome === true) {
           logger.info("현재 크롬 사용중", { _item, result });
