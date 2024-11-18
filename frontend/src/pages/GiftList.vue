@@ -111,7 +111,7 @@ dayjs.locale('ko');
 
 (() => {
   let resultItem = [];
-  axios.get('api/regist').then((res) => {
+  axios.get('regist').then((res) => {
     const items = _.get(res, 'data');
 
     for (const _item of items) {
@@ -129,7 +129,7 @@ dayjs.locale('ko');
       resultItem.push(obj);
     }
 
-    axios.get('api/regist-history').then((res) => {
+    axios.get('regist-history').then((res) => {
       const items = _.get(res, 'data');
 
       for (const _item of items) {
@@ -166,7 +166,7 @@ dayjs.locale('ko');
 const detailView = (props) => {
   showingImage.value = [];
   for (const _path of props.row.image_path) {
-    showingImage.value.push(`api/images/${_path}`);
+    showingImage.value.push(`images/${_path}`);
   }
   detail.value = true;
 };
@@ -179,7 +179,7 @@ const handleRetry = async (props) => {
   const registHistoryId = _.get(props.row, '_id');
 
   try {
-    const result = await axios.get(`api/regist-history/${registHistoryId}`);
+    const result = await axios.get(`regist-history/${registHistoryId}`);
     let requestData = _.get(result, 'data');
     requestData = _.omit(requestData, [
       '_id',
@@ -188,7 +188,7 @@ const handleRetry = async (props) => {
       'status',
     ]);
 
-    const registResult = await axios.post('api/regist', requestData);
+    const registResult = await axios.post('regist', requestData);
 
     let obj = {
       _id: registResult.data._id,
@@ -215,7 +215,7 @@ const deleteRow = async (props) => {
   const registHistoryId = _.get(props.row, '_id');
 
   try {
-    await axios.delete(`api/regist-history/${registHistoryId}`);
+    await axios.delete(`regist-history/${registHistoryId}`);
 
     giftiList.value = giftiList.value.filter(
       (item) => item._id !== props.row._id
