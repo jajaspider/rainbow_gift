@@ -214,13 +214,13 @@ class AutoSelling {
             await reviewElement.click();
             logger.info("리뷰 신청", { _item, result });
 
-            await autoSelling.driver.wait(until.alertIsPresent(), 5000); // 최대 5초 대기
+            await autoSelling.driver.wait(until.alertIsPresent(), 30000); // 최대 30초 대기
             const alert = await autoSelling.driver.switchTo().alert();
             const alertText = await alert.getText();
             await alert.accept();
 
             if (_.includes(alertText, "쿠폰이 등록되었습니다.")) {
-              const purchaseComplete = `매입완료\n브랜드: ${_item.brand_name}\n상품명: ${_item.item_name}\n매입 가격: ${price}원\n완료 갯수: ${completeCount}/${itemCount}\n\n${alertText}`;
+              const purchaseComplete = `전체 매입 완료\n브랜드: ${_item.brand_name}\n상품명: ${_item.item_name}\n매입 가격: ${price}원\n완료 갯수: ${completeCount}/${itemCount}\n\n${alertText}`;
               await messageHandler(purchaseComplete);
               logger.info(purchaseComplete, { _item, result });
               await RegistHistory.findOneAndUpdate(
@@ -228,7 +228,7 @@ class AutoSelling {
                 { status: "success" }
               );
             } else {
-              const purchaseComplete = `매입실패\n브랜드: ${_item.brand_name}\n상품명: ${_item.item_name}\n매입 가격: ${price}원\n완료 갯수: ${completeCount}/${itemCount}\n\n${alertText}`;
+              const purchaseComplete = `일부 매입 완료\n브랜드: ${_item.brand_name}\n상품명: ${_item.item_name}\n매입 가격: ${price}원\n완료 갯수: ${completeCount}/${itemCount}\n\n${alertText}`;
               await messageHandler(purchaseComplete);
               logger.info(purchaseComplete, { _item, result });
               await RegistHistory.findOneAndUpdate(
@@ -237,11 +237,11 @@ class AutoSelling {
               );
             }
 
-            autoSelling.useChrome = false;
             // 다시 초기위치로 이동
             await autoSelling.driver.get(
               "https://ncnc.app/sell/wait-confirmed"
             );
+            autoSelling.useChrome = false;
           }
         } catch (e) {
           console.dir(e);
@@ -262,9 +262,9 @@ class AutoSelling {
             { status: "fail" }
           );
 
-          autoSelling.useChrome = false;
           // 다시 초기위치로 이동
           await autoSelling.driver.get("https://ncnc.app/sell/wait-confirmed");
+          autoSelling.useChrome = false;
         }
       }
     });
