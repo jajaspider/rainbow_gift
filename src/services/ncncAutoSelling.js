@@ -74,17 +74,21 @@ class AutoSelling {
         autoSelling.useChrome = true;
         logger.info("매입 프로세스 시작", { _item, result });
 
-        // let registHistory = null;
+        let registHistory = null;
         try {
-          await RegistHistory.create(_item);
+          registHistory = await RegistHistory.create(
+            _.omit(_item, ["_id", "created_at", "updated_at"])
+          );
+          registHistory = JSON.parse(JSON.stringify(registHistory));
           await Regist.findOneAndDelete({ _id: _item._id });
+          await RegistHistory.findOneAndUpdate(
+            { _id: registHistory._id },
+            { status: "progress" }
+          );
 
-          const purchaseProcess = `${_item.brand_name} ${_item.item_name}(${result.askingPrice})  매입중`;
+          const purchaseProcess = `매입중\n브랜드: ${_item.brand_name}\n상품명: ${_item.item_name}\n판매 신청 가격: ${_item.price}원\n현재 매입 가격: ${price}원`;
           await messageHandler(purchaseProcess);
           logger.info(purchaseProcess, { _item, result });
-
-          // 매입중이라면 연결되어있는 크롬 드라이버에 매입 프로세스
-          await autoSelling.driver.get("https://ncnc.app/sell/wait-confirmed");
 
           // 쿠폰 판매하기 버튼
           const buttonLocator = By.css(
@@ -175,6 +179,8 @@ class AutoSelling {
             logger.info("약관 동의 이미 체크됨", { _item, result });
           }
 
+          const itemCount = _item.image_path.length;
+          let completeCount = 0;
           // 로컬 이미지들 올리기
           for (const _path of _item.image_path) {
             const _imagePath = path.join(
@@ -192,6 +198,7 @@ class AutoSelling {
             const fileInput =
               await autoSelling.driver.findElement(fileInputLocator);
             await fileInput.sendKeys(_imagePath);
+            completeCount += 1;
             logger.info("이미지 삽입", { _item, result });
           }
 
@@ -207,27 +214,56 @@ class AutoSelling {
             await reviewElement.click();
             logger.info("리뷰 신청", { _item, result });
 
-            // await RegistHistory.create(_item);
-            // await Regist.findOneAndDelete({ _id: _item._id });
-
-            await autoSelling.driver.wait(until.alertIsPresent(), 5000); // 최대 5초 대기
+            await autoSelling.driver.wait(until.alertIsPresent(), 30000); // 최대 30초 대기
             const alert = await autoSelling.driver.switchTo().alert();
             const alertText = await alert.getText();
             await alert.accept();
 
-            const purchaseComplete = `${_item.brand_name} ${_item.item_name}(${result.askingPrice}) 매입완료\n\n${alertText}`;
-            await messageHandler(purchaseComplete);
-            logger.info(purchaseComplete, { _item, result });
+            if (_.includes(alertText, "쿠폰이 등록되었습니다.")) {
+              const purchaseComplete = `전체 매입 완료\n브랜드: ${_item.brand_name}\n상품명: ${_item.item_name}\n매입 가격: ${price}원\n완료 갯수: ${completeCount}/${itemCount}\n\n${alertText}`;
+              await messageHandler(purchaseComplete);
+              logger.info(purchaseComplete, { _item, result });
+              await RegistHistory.findOneAndUpdate(
+                { _id: registHistory._id },
+                { status: "success" }
+              );
+            } else {
+              const purchaseComplete = `일부 매입 완료\n브랜드: ${_item.brand_name}\n상품명: ${_item.item_name}\n매입 가격: ${price}원\n완료 갯수: ${completeCount}/${itemCount}\n\n${alertText}`;
+              await messageHandler(purchaseComplete);
+              logger.info(purchaseComplete, { _item, result });
+              await RegistHistory.findOneAndUpdate(
+                { _id: registHistory._id },
+                { status: "partial_done" }
+              );
+            }
 
+            // 다시 초기위치로 이동
+            await autoSelling.driver.get(
+              "https://ncnc.app/sell/wait-confirmed"
+            );
             autoSelling.useChrome = false;
           }
         } catch (e) {
           console.dir(e);
-          const getTime = autoSelling.getCurrentTime();
-          const purchaseFail = `[${getTime}] ${_item.brand_name} ${_item.item_name}(${result.askingPrice}) 매입실패 수동등록 필요`;
+          if (e.name === "UnexpectedAlertOpenError") {
+            const purchaseFail = `매입 제한량 도달 재등록 필요\n브랜드: ${_item.brand_name}\n상품명: ${_item.item_name}\nid: ${_item._id}`;
+            await messageHandler(purchaseFail);
+            logger.error(purchaseFail, { _item, result });
+            await RegistHistory.findOneAndUpdate(
+              { _id: registHistory._id },
+              { status: "fail" }
+            );
+          }
+          const purchaseFail = `매입실패 수동 확인 필요\n브랜드: ${_item.brand_name}\n상품명: ${_item.item_name}\nid: ${_item._id}`;
           await messageHandler(purchaseFail);
           logger.error(purchaseFail, { _item, result });
+          await RegistHistory.findOneAndUpdate(
+            { _id: registHistory._id },
+            { status: "fail" }
+          );
 
+          // 다시 초기위치로 이동
+          await autoSelling.driver.get("https://ncnc.app/sell/wait-confirmed");
           autoSelling.useChrome = false;
         }
       }

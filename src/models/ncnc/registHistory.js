@@ -1,7 +1,8 @@
 const mongoose = require("mongoose");
 
+const giftiStatus = ["progress", "partial_done", "success", "fail"];
 // Define Schemes
-const RegistSchema = new mongoose.Schema(
+const RegistHistorySchema = new mongoose.Schema(
   {
     category_id: {
       type: Number
@@ -27,18 +28,19 @@ const RegistSchema = new mongoose.Schema(
     image_path: {
       type: Array
     },
-    created_at: {
-      type: Date
+    status: {
+      type: String,
+      enum: giftiStatus
     },
-    updated_at: {
-      type: Date
+    active: {
+      type: Boolean
     }
   },
   {
-    timestamps: false,
+    timestamps: { createdAt: "created_at", updatedAt: "updated_at" },
     versionKey: false
   }
 );
 
 // Create Model & Export
-module.exports = mongoose.model("RegistHistory", RegistSchema);
+module.exports = mongoose.model("RegistHistory", RegistHistorySchema);
