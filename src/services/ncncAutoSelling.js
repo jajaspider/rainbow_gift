@@ -336,6 +336,6 @@ class AutoSelling {
 }
 
 const autoSelling = new AutoSelling();
-autoSelling.runPollingLoop();
+// autoSelling.runPollingLoop();
 
 module.exports = autoSelling;
