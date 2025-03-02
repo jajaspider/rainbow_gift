@@ -61,7 +61,7 @@ class AutoSelling {
 
     // 매입 프로세스 시작 이벤트
     ncncEvent.on("purchase", async (_item, result) => {
-      const price = _.get(targetItem, "askingPrice");
+      const price = _.get(result, "askingPrice");
 
       logger.info("purchase 이벤트 발생", { _item, result });
       if (autoSelling.useChrome === true) {
