@@ -5,3 +5,4 @@ mongo:
 telegram_api_key: ""
 telegram_chat_id: ""
 listenPort: 30003
+ncncToken: ""

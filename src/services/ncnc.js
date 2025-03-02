@@ -3,6 +3,9 @@ const axios = require("axios");
 
 const DB = require("../models");
 
+const config = require("../services/config");
+const ncncToken = _.get(config, "ncncToken");
+
 function toJSON(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
@@ -17,7 +20,11 @@ async function sleep(ms = 1000) {
 const { Category, Brand, Item } = DB;
 
 async function updateCategory() {
-  const result = await axios.get(`https://api2.ncnc.app/con-category1s`);
+  const result = await axios.get(`https://api2.ncnc.app/con-category1s`, {
+    headers: {
+      Authorization: `Bearer ${ncncToken}`
+    }
+  });
   const resultData = _.get(result, "data.conCategory1s", []);
 
   for (const _category of resultData) {
@@ -45,7 +52,12 @@ async function updateBrand() {
   const categories = await getCategory();
   for (const _category of categories) {
     const result = await axios.get(
-      `https://api2.ncnc.app/con-category2s?conCategory1Id=${_category.id}&forSeller=1`
+      `https://api2.ncnc.app/con-category2s?conCategory1Id=${_category.id}&forSeller=1`,
+      {
+        headers: {
+          Authorization: `Bearer ${ncncToken}`
+        }
+      }
     );
     const brands = _.get(result, "data.conCategory2s", []);
     for (const _brand of brands) {
@@ -80,7 +92,12 @@ async function updateItem() {
   const brands = await getBrand();
   for (const _brand of brands) {
     const result = await axios.get(
-      `https://api2.ncnc.app/con-items?conCategory2Id=${_brand.id}&forSeller=1`
+      `https://api2.ncnc.app/con-items?conCategory2Id=${_brand.id}&forSeller=1`,
+      {
+        headers: {
+          Authorization: `Bearer ${ncncToken}`
+        }
+      }
     );
     const items = _.get(result, "data.conItems", []);
     for (const _item of items) {
@@ -127,13 +144,33 @@ async function getItemSearch(brandId, name) {
   return targetItems;
 }
 
+async function getBrandStatus(brandId) {
+  // eslint-disable-next-line no-param-reassign
+  brandId = Number(brandId);
+  const result = await axios.get(
+    `https://api2.ncnc.app/con-items?conCategory2Id=${brandId}&forSeller=1`,
+    {
+      headers: {
+        Authorization: `Bearer ${ncncToken}`
+      }
+    }
+  );
+  const resultData = _.get(result, "data.conItems");
+  return resultData;
+}
+
 async function getItemStatus(brandId, itemId) {
   // eslint-disable-next-line no-param-reassign
   brandId = Number(brandId);
   // eslint-disable-next-line no-param-reassign
   itemId = Number(itemId);
   const result = await axios.get(
-    `https://api2.ncnc.app/con-items?conCategory2Id=${brandId}&forSeller=1`
+    `https://api2.ncnc.app/con-items?conCategory2Id=${brandId}&forSeller=1`,
+    {
+      headers: {
+        Authorization: `Bearer ${ncncToken}`
+      }
+    }
   );
   const resultData = _.get(result, "data.conItems");
   const targetItem = _.find(resultData, { id: itemId });
@@ -153,6 +190,7 @@ module.exports = {
   getBrandById,
   getItemById,
   getItemSearch,
+  getBrandStatus,
   getItemStatus,
   updateItem
 };
